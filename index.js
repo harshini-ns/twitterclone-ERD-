@@ -4,6 +4,7 @@ require('dotenv').config();
 const { Pool } = require('pg');
 const { exists } = require('fs');
 const { ClientRequest } = require('http');
+const { query } = require('express');
 const { DATABASE_URL } = process.env
 
 let app = express();
@@ -27,6 +28,28 @@ async function getPostgresVersion() {
   }
 }
 getPostgresVersion();
+//twitter clone part-3
+//get all the post from a specific user 
+app.get('/posts/user/:user_id', async (req, res)=>{
+  const {user_id} = req.params;
+  const client = await pool.connect();
+  try{
+    const posts = await client.query('SELECT * FROM posts WHERE user_id=$1', [user_id]);
+    if(posts.rowCount>0){
+      res.json(posts.rows);
+    }
+    else{
+      res.status(400).json({error :" no posts found under this user "});
+    }
+  }
+  catch(error){
+    console.error('Error', error.message);
+    res.status(500).json({error : error.message});
+  }
+  finally{
+    client.release();
+  }
+})
 
 //create a post with a user foreign key
 app.post('/posts', async (req , res)=>{
